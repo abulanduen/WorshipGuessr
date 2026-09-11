@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomUUID } from "crypto";
 import fs from "fs/promises";
 import path from "path";
 import { isAuthorized } from "@/lib/auth";
-import { ensureStorageDirs, stagingPathFor, deleteStagingFile } from "@/lib/storage";
+import { cleanupTmpFile, deleteBlob, tmpFilePath, uploadStagingBlob } from "@/lib/storage";
 import { analyzeAudioFile } from "@/lib/analyze";
 import { SUPPORTED_AUDIO_EXTENSIONS } from "@/lib/constants";
 import type { AnalyzeResult } from "@/types";
+
+// Decoding + loudness analysis of a full track can take a while on Vercel's
+// default 10s function limit.
+export const maxDuration = 60;
+
+function isStagingUrl(url: string): boolean {
+  try {
+    return new URL(url).pathname.includes("/staging/");
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(req: NextRequest) {
   if (!isAuthorized(req)) return NextResponse.json({ error: "Passcode required" }, { status: 401 });
@@ -20,13 +31,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Unsupported audio format: ${ext || "unknown"}` }, { status: 400 });
   }
 
-  await ensureStorageDirs();
-  const stagingId = randomUUID();
-  const stagedPath = stagingPathFor(stagingId, ext);
+  const localPath = tmpFilePath("upload", ext);
 
   try {
-    await fs.writeFile(stagedPath, Buffer.from(await file.arrayBuffer()));
-    const analysis = await analyzeAudioFile(stagedPath, file.name);
+    await fs.writeFile(localPath, Buffer.from(await file.arrayBuffer()));
+    const analysis = await analyzeAudioFile(localPath, file.name);
+    const stagingId = await uploadStagingBlob(localPath, ext);
 
     const result: AnalyzeResult = {
       stagingId,
@@ -39,9 +49,10 @@ export async function POST(req: NextRequest) {
     };
     return NextResponse.json(result);
   } catch (err) {
-    await deleteStagingFile(stagingId).catch(() => {});
     const message = err instanceof Error ? err.message : "Could not read this audio file";
     return NextResponse.json({ error: message }, { status: 422 });
+  } finally {
+    await cleanupTmpFile(localPath);
   }
 }
 
@@ -49,6 +60,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const stagingId = req.nextUrl.searchParams.get("stagingId");
   if (!stagingId) return NextResponse.json({ error: "Missing stagingId" }, { status: 400 });
-  await deleteStagingFile(stagingId).catch(() => {});
+  if (!isStagingUrl(stagingId)) return NextResponse.json({ error: "Invalid stagingId" }, { status: 400 });
+  await deleteBlob(stagingId);
   return NextResponse.json({ ok: true });
 }

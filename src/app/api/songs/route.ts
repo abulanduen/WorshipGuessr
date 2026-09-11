@@ -10,6 +10,9 @@ import { probeDuration } from "@/lib/ffmpeg";
 import { suggestStartTime } from "@/lib/analyze";
 import { SUPPORTED_AUDIO_EXTENSIONS } from "@/lib/constants";
 
+// Trimming/encoding can take a while on Vercel's default 10s function limit.
+export const maxDuration = 60;
+
 export async function GET() {
   const songs = await prisma.song.findMany({ orderBy: { title: "asc" } });
   return NextResponse.json(songs.map((s) => ({ ...s, addedAt: s.addedAt.toISOString() })));

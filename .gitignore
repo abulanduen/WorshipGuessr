@@ -40,12 +40,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# database
-/prisma/dev.db
-/prisma/dev.db-journal
-
-# uploaded / staged audio (keep the folders, not their contents)
-/public/uploads/*
-!/public/uploads/.gitkeep
-/.data/
