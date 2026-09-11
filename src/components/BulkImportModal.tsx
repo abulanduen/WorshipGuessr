@@ -589,6 +589,9 @@ function ReviewTableRow({
           className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink outline-none transition focus:border-gold disabled:opacity-50"
         />
         <p className="mt-0.5 truncate text-[10px] text-ink-mute">{row.fileName}</p>
+        {row.status === "error" && row.errorMessage && (
+          <p className="mt-0.5 text-[10px] text-bad">{row.errorMessage}</p>
+        )}
       </td>
       <td className="px-3 py-2">
         <input
