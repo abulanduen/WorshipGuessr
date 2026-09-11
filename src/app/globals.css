@@ -107,3 +107,89 @@ body {
 .animate-pulse-ring {
   animation: pulse-ring 1.4s ease-out infinite;
 }
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in {
+  animation: scale-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-backdrop-in {
+  animation: backdrop-in 0.18s ease-out both;
+}
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.animate-pop {
+  animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes tick-fill {
+  from { transform: scaleY(0.4); opacity: 0.5; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+.animate-tick-fill {
+  animation: tick-fill 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes shimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+.animate-shimmer {
+  background-image: linear-gradient(
+    100deg,
+    var(--surface-2) 40%,
+    var(--surface-3) 50%,
+    var(--surface-2) 60%
+  );
+  background-size: 250% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes confetti-fall {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--drift), 140px) rotate(var(--spin)); opacity: 0; }
+}
+.animate-confetti {
+  animation: confetti-fall var(--fall-duration, 0.9s) cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Smooth expand/collapse via the grid-rows trick — no JS height measuring needed. */
+.collapsible-rows {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.collapsible-rows.is-open {
+  grid-template-rows: 1fr;
+}
+.collapsible-rows > div {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shake,
+  .animate-rise-in,
+  .animate-pulse-ring,
+  .animate-scale-in,
+  .animate-backdrop-in,
+  .animate-pop,
+  .animate-tick-fill,
+  .animate-shimmer,
+  .animate-confetti {
+    animation: none !important;
+  }
+  .collapsible-rows {
+    transition: none !important;
+  }
+}

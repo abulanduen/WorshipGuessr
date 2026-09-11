@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import { isAuthorized } from "@/lib/auth";
-import { cleanupTmpFile, deleteBlob, downloadBlobToTmp } from "@/lib/storage";
+import { cleanupTmpFile, deleteBlob, downloadBlobToTmp, isStagingBlobUrl } from "@/lib/storage";
 import { commitSong, DuplicateSongError, isDuplicateSong } from "@/lib/songs";
 import { probeDuration } from "@/lib/ffmpeg";
 import type { ImportRowInput, ImportRowResult } from "@/types";
@@ -10,14 +10,6 @@ import type { ImportRowInput, ImportRowResult } from "@/types";
 // Vercel's default 10s function limit.
 export const maxDuration = 60;
 
-function isStagingUrl(url: string): boolean {
-  try {
-    return new URL(url).pathname.includes("/staging/");
-  } catch {
-    return false;
-  }
-}
-
 export async function POST(req: NextRequest) {
   if (!isAuthorized(req)) return NextResponse.json({ error: "Passcode required" }, { status: 401 });
 
@@ -25,7 +17,7 @@ export async function POST(req: NextRequest) {
   if (!body?.stagingId || !body.title) {
     return NextResponse.json({ status: "error", reason: "Missing stagingId or title" } satisfies ImportRowResult, { status: 400 });
   }
-  if (!isStagingUrl(body.stagingId)) {
+  if (!isStagingBlobUrl(body.stagingId)) {
     return NextResponse.json({ status: "error", reason: "Invalid stagingId" } satisfies ImportRowResult, { status: 400 });
   }
 

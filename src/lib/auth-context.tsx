@@ -6,6 +6,8 @@ type Resolver = (authorized: boolean) => void;
 
 type AuthContextValue = {
   authorizedFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+  /** Proactively prompts for the passcode (e.g. an "Unlock" button), without making a real request first. */
+  unlock: () => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -68,38 +70,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <AuthContext.Provider value={{ authorizedFetch }}>
+    <AuthContext.Provider value={{ authorizedFetch, unlock: requestPasscode }}>
       {children}
       {open && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 p-4">
+        <div className="animate-backdrop-in fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 p-4">
           <form
             onSubmit={submit}
-            className="w-full max-w-sm rounded-2xl border border-line bg-surface p-6 shadow-2xl"
+            className="animate-scale-in w-full max-w-sm rounded-2xl border border-line bg-surface p-6 shadow-2xl"
           >
             <h3 className="font-display text-lg font-semibold text-ink">Setlist passcode</h3>
             <p className="mt-1 text-sm text-ink-dim">
-              This action edits the shared setlist. Enter the passcode to continue.
+              This action requires the shared setlist passcode.
             </p>
             <input
               type="password"
               autoFocus
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              className="mt-4 w-full rounded-xl border border-line bg-surface-2 px-4 py-3 text-ink outline-none focus:border-gold focus:ring-2 focus:ring-gold/30"
+              className="mt-4 w-full rounded-xl border border-line bg-surface-2 px-4 py-3 text-ink outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30"
             />
-            {error && <p className="mt-2 text-sm text-bad">{error}</p>}
+            {error && <p className="animate-rise-in mt-2 text-sm text-bad">{error}</p>}
             <div className="mt-5 flex gap-2.5">
               <button
                 type="button"
                 onClick={() => settle(false)}
-                className="flex-1 rounded-xl border border-line bg-surface-2 px-4 py-2.5 text-sm font-medium text-ink-dim hover:bg-surface-3"
+                className="flex-1 rounded-xl border border-line bg-surface-2 px-4 py-2.5 text-sm font-medium text-ink-dim transition active:scale-[0.97] hover:bg-surface-3"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting || !value}
-                className="flex-1 rounded-xl bg-gold px-4 py-2.5 text-sm font-semibold text-gold-ink hover:bg-gold-bright disabled:opacity-50"
+                className="flex-1 rounded-xl bg-gold px-4 py-2.5 text-sm font-semibold text-gold-ink transition active:scale-[0.97] hover:bg-gold-bright disabled:opacity-50 disabled:active:scale-100"
               >
                 {submitting ? "Checking…" : "Unlock"}
               </button>

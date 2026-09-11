@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { RoundResult } from "@/types";
+import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 
 type Props = {
   results: RoundResult[];
@@ -15,6 +16,7 @@ export function RoundSummary({ results, totalScore, onPlayAgain, onSaved }: Prop
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const animatedTotal = useAnimatedCounter(totalScore, 900);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +42,7 @@ export function RoundSummary({ results, totalScore, onPlayAgain, onSaved }: Prop
   return (
     <div className="animate-rise-in">
       <h2 className="text-center font-display text-2xl font-semibold text-ink">Round complete</h2>
-      <p className="mt-2 text-center font-mono text-4xl text-gold-bright">{totalScore} pts</p>
+      <p className="mt-2 text-center font-mono text-4xl text-gold-bright">{animatedTotal} pts</p>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-line">
         <table className="w-full text-sm">
@@ -53,7 +55,11 @@ export function RoundSummary({ results, totalScore, onPlayAgain, onSaved }: Prop
           </thead>
           <tbody>
             {results.map((r, i) => (
-              <tr key={`${r.song.id}-${i}`} className="border-t border-line">
+              <tr
+                key={`${r.song.id}-${i}`}
+                className="animate-rise-in border-t border-line"
+                style={{ animationDelay: `${i * 45}ms` }}
+              >
                 <td className="max-w-[12rem] px-3 py-2 align-top">
                   <div className="truncate font-medium text-ink">{r.song.title}</div>
                   {r.song.artist && <div className="truncate text-xs text-ink-mute">{r.song.artist}</div>}
@@ -80,20 +86,20 @@ export function RoundSummary({ results, totalScore, onPlayAgain, onSaved }: Prop
           <button
             type="submit"
             disabled={saving || !name.trim()}
-            className="rounded-xl bg-gold px-6 py-3 text-sm font-semibold text-gold-ink transition hover:bg-gold-bright disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl bg-gold px-6 py-3 text-sm font-semibold text-gold-ink transition active:scale-[0.97] hover:bg-gold-bright disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100"
           >
             {saving ? "Saving…" : "Save score"}
           </button>
         </form>
       ) : (
-        <p className="mt-6 text-center text-sm font-medium text-good">Saved to the leaderboard!</p>
+        <p className="animate-pop mt-6 text-center text-sm font-medium text-good">Saved to the leaderboard!</p>
       )}
-      {error && <p className="mt-2 text-center text-sm text-bad">{error}</p>}
+      {error && <p className="animate-rise-in mt-2 text-center text-sm text-bad">{error}</p>}
 
       <button
         type="button"
         onClick={onPlayAgain}
-        className="mt-6 w-full rounded-xl border border-line bg-surface-2 px-4 py-3 text-sm font-medium text-ink-dim transition hover:bg-surface-3"
+        className="mt-6 w-full rounded-xl border border-line bg-surface-2 px-4 py-3 text-sm font-medium text-ink-dim transition active:scale-[0.98] hover:bg-surface-3"
       >
         Play again
       </button>

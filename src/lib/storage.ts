@@ -27,14 +27,18 @@ export async function uploadClipBlob(localPath: string): Promise<string> {
   return blob.url;
 }
 
-// Full-length original, held between the bulk-import "analyze" and "import"
-// steps. Deleted as soon as it's imported, skipped, or removed from review.
-export async function uploadStagingBlob(localPath: string, ext: string): Promise<string> {
-  const buffer = await fs.readFile(localPath);
-  const blob = await put(`staging/${randomUUID()}${ext}`, buffer, {
-    access: "public",
-  });
-  return blob.url;
+// Full-length originals are uploaded directly from the browser to this
+// `staging/` prefix (see /api/blob-upload) rather than through a server
+// route — Vercel serverless functions cap request bodies at 4.5MB, which
+// real audio files routinely exceed. Held between the bulk-import "analyze"
+// and "import" steps; deleted as soon as a row is imported, skipped, or
+// removed from review.
+export function isStagingBlobUrl(url: string): boolean {
+  try {
+    return new URL(url).pathname.includes("/staging/");
+  } catch {
+    return false;
+  }
 }
 
 export async function downloadBlobToTmp(url: string, ext: string): Promise<string> {
