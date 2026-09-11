@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #15110d;
+  --bg-2: #0f0c09;
+  --surface: #211a13;
+  --surface-2: #2b2118;
+  --surface-3: #35281c;
+  --line: #3d2f21;
+  --ink: #f4ecdc;
+  --ink-dim: #cdbfa8;
+  --ink-mute: #9a8b74;
+  --gold: #e3b23c;
+  --gold-bright: #f6ce6f;
+  --gold-ink: #2a1c06;
+  --teal: #5aa79b;
+  --good: #83b06a;
+  --bad: #d97b62;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-dim: var(--ink-dim);
+  --color-ink-mute: var(--ink-mute);
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+  --color-gold-ink: var(--gold-ink);
+  --color-teal: var(--teal);
+  --color-good: var(--good);
+  --color-bad: var(--bad);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  border-color: var(--line);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: radial-gradient(ellipse 120% 80% at 50% -10%, var(--surface) 0%, var(--bg) 55%), var(--bg-2);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  min-height: 100dvh;
+}
+
+::selection {
+  background: var(--gold);
+  color: var(--gold-ink);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+}
+.font-mono {
+  font-family: var(--font-mono), monospace;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+.animate-shake {
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-rise-in {
+  animation: rise-in 0.25s ease-out both;
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 45%, transparent); }
+  100% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--gold) 0%, transparent); }
+}
+.animate-pulse-ring {
+  animation: pulse-ring 1.4s ease-out infinite;
+}

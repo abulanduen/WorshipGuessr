@@ -1,0 +1,54 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import type { ScoreEntry } from "@/types";
+import { Collapsible } from "./Collapsible";
+
+export function LeaderboardPanel({ refreshKey }: { refreshKey: number }) {
+  const [scores, setScores] = useState<ScoreEntry[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/scores")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setScores(data);
+      })
+      .catch(() => {
+        if (!cancelled) setError("Could not load leaderboard");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey]);
+
+  return (
+    <Collapsible title="Leaderboard" subtitle="Top 10 scores">
+      {error && <p className="text-sm text-bad">{error}</p>}
+      {!error && scores === null && <p className="text-sm text-ink-mute">Loading…</p>}
+      {!error && scores?.length === 0 && (
+        <p className="text-sm text-ink-mute">No scores yet — be the first to play!</p>
+      )}
+      {!error && scores && scores.length > 0 && (
+        <ol className="space-y-1.5">
+          {scores.map((s, i) => (
+            <li
+              key={s.id}
+              className="flex items-center justify-between gap-3 rounded-xl bg-surface-2 px-4 py-2.5"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="w-5 shrink-0 font-mono text-sm text-ink-mute">{i + 1}</span>
+                <span className="truncate font-medium text-ink">{s.name}</span>
+              </div>
+              <div className="flex shrink-0 items-center gap-3 font-mono text-sm">
+                <span className="hidden text-ink-mute sm:inline">{s.roundsPlayed} songs</span>
+                <span className="text-gold">{s.score}</span>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+    </Collapsible>
+  );
+}
