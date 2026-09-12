@@ -18,7 +18,7 @@ type Props = {
 
 export function GameStage({ songs, onScoreSaved }: Props) {
   const game = useGame(songs);
-  const { audioRef, analyserRef, isPlaying, play, playRemaining, stop } = useAudioClip();
+  const { audioRef, analyserRef, isPlaying, play, playRemaining, stop, unlockAudio } = useAudioClip();
 
   const {
     phase,
@@ -86,7 +86,14 @@ export function GameStage({ songs, onScoreSaved }: Props) {
       <audio ref={audioRef} preload="auto" crossOrigin="anonymous" className="hidden" />
 
       {phase === "setup" && (
-        <SetupView songCount={songs.length} canStart={canStart} onStart={startGame} />
+        <SetupView
+          songCount={songs.length}
+          canStart={canStart}
+          onStart={() => {
+            unlockAudio();
+            startGame();
+          }}
+        />
       )}
 
       {(phase === "stage" || phase === "feedback") && currentSong && (
@@ -125,7 +132,10 @@ export function GameStage({ songs, onScoreSaved }: Props) {
               <div className="flex flex-col gap-2.5 sm:flex-row">
                 <button
                   type="button"
-                  onClick={advanceStage}
+                  onClick={() => {
+                    unlockAudio();
+                    advanceStage();
+                  }}
                   disabled={!canAdvanceStage}
                   className="flex-1 rounded-xl border border-teal/50 bg-teal/10 px-4 py-3 text-sm font-semibold text-teal transition active:scale-[0.97] hover:bg-teal/20 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
                 >
@@ -143,7 +153,14 @@ export function GameStage({ songs, onScoreSaved }: Props) {
           )}
 
           {phase === "feedback" && lastResult && (
-            <FeedbackPanel result={lastResult} isLastSong={isLastSong} onContinue={nextSong} />
+            <FeedbackPanel
+              result={lastResult}
+              isLastSong={isLastSong}
+              onContinue={() => {
+                unlockAudio();
+                nextSong();
+              }}
+            />
           )}
         </div>
       )}

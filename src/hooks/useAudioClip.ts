@@ -48,6 +48,21 @@ export function useAudioClip() {
     return analyserRef.current;
   }, []);
 
+  /**
+   * Creates the audio graph and resumes it if suspended — call this
+   * synchronously inside every real click/tap handler that eventually leads
+   * to playback (not just the very first one). Safari, especially on iOS,
+   * is much stricter than other browsers about only allowing this inside a
+   * direct user-gesture callback; doing it after even a short setTimeout
+   * (which the actual play() call needs, to let a new clip's src settle)
+   * can get silently rejected on some devices/versions.
+   */
+  const unlockAudio = useCallback(() => {
+    ensureGraph();
+    const ctx = audioCtxRef.current;
+    if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
+  }, [ensureGraph]);
+
   const clearStopTimer = useCallback(() => {
     if (stopTimerRef.current !== null) {
       window.clearTimeout(stopTimerRef.current);
@@ -135,5 +150,5 @@ export function useAudioClip() {
     };
   }, [clearStopTimer]);
 
-  return { audioRef, analyserRef, isPlaying, play, playRemaining, stop };
+  return { audioRef, analyserRef, isPlaying, play, playRemaining, stop, unlockAudio };
 }
