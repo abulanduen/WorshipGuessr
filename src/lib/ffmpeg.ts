@@ -53,12 +53,17 @@ export type TrimOptions = {
 export function trimAndEncode({ inputPath, outputPath, startSeconds, durationSeconds }: TrimOptions): Promise<void> {
   return new Promise((resolve, reject) => {
     ffmpeg(inputPath)
+      // Most real music files carry embedded cover art, which ffmpeg treats
+      // as a video stream — without excluding it, muxing that alongside the
+      // AAC audio track into MP4 fails outright ("Conversion failed") on
+      // essentially any commercially-tagged file.
+      .noVideo()
       .setStartTime(Math.max(0, startSeconds))
       .duration(durationSeconds)
       .audioCodec("aac")
       .audioBitrate("112k")
       .audioChannels(2)
-      .outputOptions(["-movflags +faststart", "-ac 2"])
+      .outputOptions(["-movflags +faststart"])
       .format("mp4")
       .on("error", (err) => reject(err))
       .on("end", () => resolve())

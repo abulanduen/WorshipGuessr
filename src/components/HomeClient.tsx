@@ -29,7 +29,7 @@ export function HomeClient() {
 
   return (
     <AuthProvider>
-      <div className="mx-auto flex min-h-screen w-full max-w-[640px] flex-col gap-5 px-4 py-8 sm:px-6 sm:py-12">
+      <div className="mx-auto flex min-h-screen w-full max-w-[640px] flex-col gap-7 px-4 py-10 sm:px-6 sm:py-14">
         <header className="animate-rise-in text-center">
           <h1 className="font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
             Worship<span className="text-gold">Guessr</span>

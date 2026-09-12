@@ -10,8 +10,8 @@
   --ink: #f4ecdc;
   --ink-dim: #cdbfa8;
   --ink-mute: #9a8b74;
-  --gold: #e3b23c;
-  --gold-bright: #f6ce6f;
+  --gold: #c9a35c;
+  --gold-bright: #ddbd7f;
   --gold-ink: #2a1c06;
   --teal: #5aa79b;
   --good: #83b06a;
@@ -101,11 +101,11 @@ body {
 }
 
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 45%, transparent); }
-  100% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--gold) 0%, transparent); }
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 25%, transparent); }
+  100% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--gold) 0%, transparent); }
 }
 .animate-pulse-ring {
-  animation: pulse-ring 1.4s ease-out infinite;
+  animation: pulse-ring 1.8s ease-out infinite;
 }
 
 @keyframes scale-in {
@@ -126,19 +126,19 @@ body {
 
 @keyframes pop {
   0% { transform: scale(1); }
-  40% { transform: scale(1.18); }
+  40% { transform: scale(1.08); }
   100% { transform: scale(1); }
 }
 .animate-pop {
-  animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: pop 0.35s cubic-bezier(0.34, 1.2, 0.64, 1) both;
 }
 
 @keyframes tick-fill {
-  from { transform: scaleY(0.4); opacity: 0.5; }
+  from { transform: scaleY(0.5); opacity: 0.6; }
   to { transform: scaleY(1); opacity: 1; }
 }
 .animate-tick-fill {
-  animation: tick-fill 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: tick-fill 0.3s ease-out both;
 }
 
 @keyframes shimmer {
@@ -157,8 +157,8 @@ body {
 }
 
 @keyframes confetti-fall {
-  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
-  100% { transform: translate(var(--drift), 140px) rotate(var(--spin)); opacity: 0; }
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0.85; }
+  100% { transform: translate(var(--drift), 100px) rotate(var(--spin)); opacity: 0; }
 }
 .animate-confetti {
   animation: confetti-fall var(--fall-duration, 0.9s) cubic-bezier(0.16, 1, 0.3, 1) both;

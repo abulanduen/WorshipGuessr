@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <div className="animate-backdrop-in fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 p-4">
           <form
             onSubmit={submit}
-            className="animate-scale-in w-full max-w-sm rounded-2xl border border-line bg-surface p-6 shadow-2xl"
+            className="animate-scale-in w-full max-w-sm rounded-2xl border border-line bg-surface p-6 shadow-lg shadow-black/20"
           >
             <h3 className="font-display text-lg font-semibold text-ink">Setlist passcode</h3>
             <p className="mt-1 text-sm text-ink-dim">

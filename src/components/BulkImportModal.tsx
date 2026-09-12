@@ -257,7 +257,7 @@ export function BulkImportModal({ onClose, onImported }: { onClose: () => void; 
 
   return (
     <div className="animate-backdrop-in fixed inset-0 z-[9998] flex items-start justify-center overflow-y-auto bg-black/75 p-3 py-8 sm:p-6">
-      <div className="animate-scale-in w-full max-w-3xl rounded-3xl border border-line bg-surface p-5 shadow-2xl sm:p-7">
+      <div className="animate-scale-in w-full max-w-3xl rounded-3xl border border-line bg-surface p-5 shadow-lg shadow-black/20 sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="font-display text-xl font-semibold text-ink">Bulk import</h2>

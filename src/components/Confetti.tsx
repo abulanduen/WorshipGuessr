@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-const COLORS = ["var(--gold)", "var(--gold-bright)", "var(--teal)", "var(--good)"];
-const PIECE_COUNT = 18;
+const COLORS = ["var(--gold)", "var(--teal)"];
+const PIECE_COUNT = 10;
 
 type Piece = {
   left: number;
@@ -18,12 +18,12 @@ type Piece = {
 function generatePieces(): Piece[] {
   return Array.from({ length: PIECE_COUNT }, () => ({
     left: Math.random() * 100,
-    delay: Math.random() * 0.15,
-    duration: 0.7 + Math.random() * 0.5,
-    drift: (Math.random() - 0.5) * 120,
-    spin: (Math.random() - 0.5) * 480,
+    delay: Math.random() * 0.12,
+    duration: 0.6 + Math.random() * 0.35,
+    drift: (Math.random() - 0.5) * 80,
+    spin: (Math.random() - 0.5) * 260,
     color: COLORS[Math.floor(Math.random() * COLORS.length)],
-    size: 5 + Math.random() * 4,
+    size: 4 + Math.random() * 3,
   }));
 }
 

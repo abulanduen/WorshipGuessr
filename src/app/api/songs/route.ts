@@ -60,7 +60,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: err.message }, { status: 409 });
     }
     console.error(err);
-    return NextResponse.json({ error: "Failed to process audio file" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Failed to process audio file";
+    return NextResponse.json({ error: message }, { status: 500 });
   } finally {
     if (localPath) await cleanupTmpFile(localPath);
   }
