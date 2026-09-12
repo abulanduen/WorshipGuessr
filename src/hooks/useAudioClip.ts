@@ -4,6 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type AudioContextCtor = typeof AudioContext;
 
+// Real devices (mobile Safari especially) have a startup delay between
+// calling play() and audio actually reaching the speakers. For very short
+// clips (the 0.1s/0.2s opening stages), that delay alone can eat the whole
+// window and produce no audible sound at all. Padding the actual stop time
+// slightly gives playback enough runway to become audible without
+// meaningfully changing the experience for longer stages.
+const PLAYBACK_STARTUP_PAD_MS = 120;
+
 /**
  * Owns a single <audio> element plus a lazily-created Web Audio analyser
  * graph (for the cosmetic visualizer). The AnalyserNode is exposed via a ref
@@ -64,7 +72,7 @@ export function useAudioClip() {
         stopTimerRef.current = window.setTimeout(() => {
           audio.pause();
           setIsPlaying(false);
-        }, Math.max(50, durationSeconds * 1000));
+        }, durationSeconds * 1000 + PLAYBACK_STARTUP_PAD_MS);
       };
 
       // Once createMediaElementSource() is in play, actual audio output is
