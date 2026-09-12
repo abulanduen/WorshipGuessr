@@ -25,7 +25,7 @@ export function ConfirmDialog({
 
   return (
     <div className="animate-backdrop-in fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 p-4">
-      <div className="animate-scale-in w-full max-w-sm rounded-2xl border border-line bg-surface p-6 shadow-lg shadow-black/20">
+      <div className="animate-scale-in w-full max-w-sm rounded-2xl border border-line bg-surface p-6">
         <h3 className="font-display text-lg font-semibold text-ink">{title}</h3>
         <p className="mt-2 text-sm text-ink-dim">{message}</p>
         <div className="mt-5 flex gap-2.5">

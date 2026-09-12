@@ -73,7 +73,7 @@ export function GameStage({ songs, onScoreSaved }: Props) {
   }, [stageDuration]);
 
   return (
-    <section className="rounded-3xl border border-line bg-surface p-6 shadow-md shadow-black/20 sm:p-9">
+    <section className="rounded-3xl border border-line bg-surface p-6 sm:p-9">
       {/*
         crossOrigin is required here: clips are served from Vercel Blob, a
         different origin than the app. Without it, Web Audio's
@@ -106,7 +106,7 @@ export function GameStage({ songs, onScoreSaved }: Props) {
               type="button"
               onClick={() => play(stageDuration)}
               aria-label={isPlaying ? "Playing" : "Play clip"}
-              className={`relative z-10 flex h-20 w-20 items-center justify-center rounded-full border-2 border-gold bg-gold text-gold-ink shadow-md shadow-black/20 transition active:scale-90 sm:h-24 sm:w-24 ${
+              className={`relative z-10 flex h-20 w-20 items-center justify-center rounded-full bg-gold text-gold-ink transition active:scale-90 sm:h-24 sm:w-24 ${
                 isPlaying ? "animate-pulse-ring" : ""
               }`}
             >
@@ -179,7 +179,7 @@ function SetupView({
         type="button"
         onClick={onStart}
         disabled={!canStart}
-        className="mt-2 rounded-full bg-gold px-8 py-3.5 text-sm font-semibold text-gold-ink shadow-md shadow-gold/10 transition active:scale-[0.97] hover:bg-gold-bright disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-ink-mute disabled:shadow-none disabled:active:scale-100"
+        className="mt-2 rounded-full bg-gold px-8 py-3.5 text-sm font-semibold text-gold-ink transition active:scale-[0.97] hover:bg-gold-bright disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-ink-mute disabled:active:scale-100"
       >
         Start round
       </button>
@@ -189,14 +189,22 @@ function SetupView({
 
 function StageTicks({ stageIndex, locked }: { stageIndex: number; locked: boolean }) {
   return (
-    <div className="mt-4 flex items-center gap-1.5">
+    <div className="mt-5 flex items-end gap-1.5">
       {STAGE_DURATIONS.map((d, i) => (
-        <div
-          key={d}
-          className={`h-1.5 flex-1 origin-bottom rounded-full transition-colors ${
-            i <= stageIndex ? (locked ? "bg-teal" : "bg-gold") : "bg-surface-3"
-          } ${i === stageIndex ? "animate-tick-fill" : ""}`}
-        />
+        <div key={d} className="relative flex-1">
+          {i === stageIndex && (
+            <div
+              className={`absolute -top-2.5 left-1/2 h-0 w-0 -translate-x-1/2 border-x-4 border-t-4 border-x-transparent ${
+                locked ? "border-t-teal" : "border-t-gold"
+              }`}
+            />
+          )}
+          <div
+            className={`h-1.5 origin-bottom rounded-full transition-colors ${
+              i <= stageIndex ? (locked ? "bg-teal" : "bg-gold") : "bg-surface-3"
+            } ${i === stageIndex ? "animate-tick-fill" : ""}`}
+          />
+        </div>
       ))}
     </div>
   );
@@ -230,7 +238,7 @@ function FeedbackPanel({
       <button
         type="button"
         onClick={onContinue}
-        className="mt-5 rounded-full bg-gold px-8 py-3 text-sm font-semibold text-gold-ink shadow-md shadow-gold/10 transition active:scale-[0.97] hover:bg-gold-bright"
+        className="mt-5 rounded-full bg-gold px-8 py-3 text-sm font-semibold text-gold-ink transition active:scale-[0.97] hover:bg-gold-bright"
       >
         {isLastSong ? "See results" : "Next song"}
       </button>

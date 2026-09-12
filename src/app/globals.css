@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #15110d;
-  --bg-2: #0f0c09;
-  --surface: #211a13;
-  --surface-2: #2b2118;
-  --surface-3: #35281c;
-  --line: #3d2f21;
-  --ink: #f4ecdc;
-  --ink-dim: #cdbfa8;
-  --ink-mute: #9a8b74;
+  --bg: #0a0a0b;
+  --bg-2: #000000;
+  --surface: #17171a;
+  --surface-2: #202024;
+  --surface-3: #2b2b30;
+  --line: #2f2f34;
+  --ink: #f5f5f6;
+  --ink-dim: #c6c6cb;
+  --ink-mute: #87878e;
   --gold: #c9a35c;
   --gold-bright: #ddbd7f;
-  --gold-ink: #2a1c06;
+  --gold-ink: #1a1408;
   --teal: #5aa79b;
   --good: #83b06a;
   --bad: #d97b62;
@@ -49,8 +49,7 @@ html {
 }
 
 body {
-  background: radial-gradient(ellipse 120% 80% at 50% -10%, var(--surface) 0%, var(--bg) 55%), var(--bg-2);
-  background-attachment: fixed;
+  background: var(--bg);
   color: var(--ink);
   font-family: var(--font-body), system-ui, sans-serif;
   min-height: 100dvh;

@@ -121,7 +121,7 @@ export function GuessInput({ songs, disabled, shakeToken, onGuess }: Props) {
               width: rect.width,
               zIndex: 9999,
             }}
-            className="animate-scale-in max-h-72 origin-top overflow-y-auto rounded-xl border border-line bg-surface-2 shadow-lg shadow-black/25"
+            className="animate-scale-in max-h-72 origin-top overflow-y-auto rounded-xl border border-line bg-surface-2"
           >
             {matches.map((song) => (
               <li key={song.id}>
