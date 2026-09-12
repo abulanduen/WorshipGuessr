@@ -26,16 +26,23 @@ export function LeaderboardPanel({ refreshKey }: { refreshKey: number }) {
   return (
     <Collapsible title="Leaderboard" subtitle="Top 10 scores">
       {error && <p className="text-sm text-bad">{error}</p>}
-      {!error && scores === null && <p className="text-sm text-ink-mute">Loading…</p>}
+      {!error && scores === null && (
+        <ol className="space-y-1.5">
+          {[0, 1, 2].map((i) => (
+            <li key={i} className="animate-shimmer h-11 rounded-xl" style={{ animationDelay: `${i * 100}ms` }} />
+          ))}
+        </ol>
+      )}
       {!error && scores?.length === 0 && (
-        <p className="text-sm text-ink-mute">No scores yet — be the first to play!</p>
+        <p className="animate-rise-in text-sm text-ink-mute">No scores yet — be the first to play!</p>
       )}
       {!error && scores && scores.length > 0 && (
         <ol className="space-y-1.5">
           {scores.map((s, i) => (
             <li
               key={s.id}
-              className="flex items-center justify-between gap-3 rounded-xl bg-surface-2 px-4 py-2.5"
+              className="animate-rise-in flex items-center justify-between gap-3 rounded-xl bg-surface-2 px-4 py-2.5 transition-transform"
+              style={{ animationDelay: `${i * 40}ms` }}
             >
               <div className="flex min-w-0 items-center gap-3">
                 <span className="w-5 shrink-0 font-mono text-sm text-ink-mute">{i + 1}</span>

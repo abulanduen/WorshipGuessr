@@ -1,12 +1,9 @@
-import { randomUUID } from "crypto";
 import { prisma } from "./prisma";
 import { trimAndEncode, probeDuration } from "./ffmpeg";
-import { ensureStorageDirs, uploadPathFor, uploadUrlFor, UPLOADS_DIR } from "./storage";
+import { cleanupTmpFile, deleteBlob, tmpFilePath, uploadClipBlob } from "./storage";
 import { normalizeKey } from "./filename-parse";
 import { CLIP_TARGET_SECONDS } from "./constants";
 import type { Song } from "@/types";
-import fs from "fs/promises";
-import path from "path";
 
 export class DuplicateSongError extends Error {
   constructor() {
@@ -34,9 +31,10 @@ export type CommitSongInput = {
 };
 
 /**
- * Trims/encodes the source file into a short web-friendly clip and creates
- * the DB row. Throws DuplicateSongError (pre-check, and again on a race lost
- * against the DB's unique constraint) without leaving an orphaned clip file.
+ * Trims/encodes the source file into a short web-friendly clip, uploads it
+ * to Blob storage, and creates the DB row. Throws DuplicateSongError
+ * (pre-check, and again on a race lost against the DB's unique constraint)
+ * without leaving an orphaned blob.
  */
 export async function commitSong({ inputPath, title, artist, startTime, sourceDuration }: CommitSongInput): Promise<Song> {
   const trimmedTitle = title.trim();
@@ -45,35 +43,64 @@ export async function commitSong({ inputPath, title, artist, startTime, sourceDu
 
   if (await isDuplicateSong(trimmedTitle, trimmedArtist)) throw new DuplicateSongError();
 
-  await ensureStorageDirs();
-  const id = randomUUID();
-  const outputPath = uploadPathFor(id);
+  const outputPath = tmpFilePath("clip", ".m4a");
   const clipLength = Math.min(CLIP_TARGET_SECONDS, Math.max(1, sourceDuration - startTime));
 
-  await trimAndEncode({ inputPath, outputPath, startSeconds: startTime, durationSeconds: clipLength });
-  const duration = await probeDuration(outputPath).catch(() => clipLength);
+  // Attempts a trim and reports whether it actually produced playable
+  // content. Some real-world files (VBR MP3s especially) report an
+  // inaccurate duration, so a heuristic-picked start time can land past
+  // where the actual audio content ends — ffmpeg can either error out
+  // ("Conversion failed") or, worse, silently succeed with a near-empty
+  // file when seeking past the end. Checking the *actual* output duration
+  // catches both cases.
+  let lastTrimError: string | null = null;
+
+  async function attemptTrim(startSeconds: number, durationSeconds: number): Promise<number | null> {
+    try {
+      await trimAndEncode({ inputPath, outputPath, startSeconds, durationSeconds });
+      const produced = await probeDuration(outputPath).catch(() => 0);
+      if (produced > 0.5) return produced;
+      lastTrimError = "ffmpeg produced an empty or near-empty file";
+      return null;
+    } catch (err) {
+      lastTrimError = err instanceof Error ? err.message : String(err);
+      return null;
+    }
+  }
 
   try {
-    const song = await prisma.song.create({
-      data: {
-        id,
-        title: trimmedTitle,
-        artist: trimmedArtist,
-        audioUrl: uploadUrlFor(id),
-        duration,
-        normalizedKey: key,
-      },
-    });
-    return { ...song, addedAt: song.addedAt.toISOString() };
-  } catch (err) {
-    await fs.rm(outputPath, { force: true });
-    if (isUniqueConstraintError(err)) throw new DuplicateSongError();
-    throw err;
+    let duration = await attemptTrim(startTime, clipLength);
+    if (duration === null && startTime !== 0) {
+      // Fall back to the safest possible clip: from the very start.
+      duration = await attemptTrim(0, Math.min(CLIP_TARGET_SECONDS, Math.max(1, sourceDuration)));
+    }
+    if (duration === null) {
+      throw new Error(`Could not produce a playable clip from this file: ${lastTrimError ?? "unknown ffmpeg error"}`);
+    }
+
+    const audioUrl = await uploadClipBlob(outputPath);
+
+    try {
+      const song = await prisma.song.create({
+        data: {
+          title: trimmedTitle,
+          artist: trimmedArtist,
+          audioUrl,
+          duration,
+          normalizedKey: key,
+        },
+      });
+      return { ...song, addedAt: song.addedAt.toISOString() };
+    } catch (err) {
+      await deleteBlob(audioUrl);
+      if (isUniqueConstraintError(err)) throw new DuplicateSongError();
+      throw err;
+    }
+  } finally {
+    await cleanupTmpFile(outputPath);
   }
 }
 
 export async function deleteSongFile(audioUrl: string): Promise<void> {
-  if (!audioUrl.startsWith("/uploads/")) return;
-  const filePath = path.join(UPLOADS_DIR, audioUrl.replace("/uploads/", ""));
-  await fs.rm(filePath, { force: true });
+  await deleteBlob(audioUrl);
 }

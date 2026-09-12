@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AUTH_COOKIE, checkPasscode, isPasscodeProtected, tokenForPasscode } from "@/lib/auth";
+import { AUTH_COOKIE, checkPasscode, isAuthorized, isPasscodeProtected, tokenForPasscode } from "@/lib/auth";
 
-export async function GET() {
-  return NextResponse.json({ protected: isPasscodeProtected() });
+export async function GET(req: NextRequest) {
+  return NextResponse.json({ protected: isPasscodeProtected(), authorized: isAuthorized(req) });
 }
 
 export async function POST(req: NextRequest) {

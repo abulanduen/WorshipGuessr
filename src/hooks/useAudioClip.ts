@@ -53,18 +53,31 @@ export function useAudioClip() {
       if (!audio) return;
       clearStopTimer();
       ensureGraph();
-      if (audioCtxRef.current?.state === "suspended") audioCtxRef.current.resume().catch(() => {});
 
-      audio.currentTime = 0;
-      audio
-        .play()
-        .then(() => setIsPlaying(true))
-        .catch(() => setIsPlaying(false));
+      const startPlayback = () => {
+        audio.currentTime = 0;
+        audio
+          .play()
+          .then(() => setIsPlaying(true))
+          .catch(() => setIsPlaying(false));
 
-      stopTimerRef.current = window.setTimeout(() => {
-        audio.pause();
-        setIsPlaying(false);
-      }, Math.max(50, durationSeconds * 1000));
+        stopTimerRef.current = window.setTimeout(() => {
+          audio.pause();
+          setIsPlaying(false);
+        }, Math.max(50, durationSeconds * 1000));
+      };
+
+      // Once createMediaElementSource() is in play, actual audio output is
+      // routed through the Web Audio graph — starting playback (and its
+      // auto-stop timer, which matters most for very short first-stage
+      // clips) before a suspended context has actually resumed can produce
+      // a clip that visibly "plays" but is never audible.
+      const ctx = audioCtxRef.current;
+      if (ctx && ctx.state === "suspended") {
+        ctx.resume().then(startPlayback).catch(startPlayback);
+      } else {
+        startPlayback();
+      }
     },
     [clearStopTimer, ensureGraph]
   );
@@ -75,6 +88,38 @@ export function useAudioClip() {
     setIsPlaying(false);
   }, [clearStopTimer]);
 
+  /**
+   * Continues playback from wherever it currently is (or resumes it, if the
+   * stage's auto-stop already paused it) through to the natural end of the
+   * clip, instead of cutting off at the guessed stage's duration — used to
+   * let the rest of the clip play out after a correct guess.
+   */
+  const playRemaining = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    clearStopTimer();
+    ensureGraph();
+
+    const resumePlayback = () => {
+      audio.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+    };
+
+    const ctx = audioCtxRef.current;
+    if (ctx && ctx.state === "suspended") {
+      ctx.resume().then(resumePlayback).catch(resumePlayback);
+    } else {
+      resumePlayback();
+    }
+  }, [clearStopTimer, ensureGraph]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onEnded = () => setIsPlaying(false);
+    audio.addEventListener("ended", onEnded);
+    return () => audio.removeEventListener("ended", onEnded);
+  }, []);
+
   useEffect(() => {
     return () => {
       clearStopTimer();
@@ -82,5 +127,5 @@ export function useAudioClip() {
     };
   }, [clearStopTimer]);
 
-  return { audioRef, analyserRef, isPlaying, play, stop };
+  return { audioRef, analyserRef, isPlaying, play, playRemaining, stop };
 }

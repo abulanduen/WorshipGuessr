@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { upload } from "@vercel/blob/client";
 import type { AnalyzeResult, ImportRowResult, LaneState, ReviewRow } from "@/types";
 import { BULK_IMPORT_CONCURRENCY } from "@/lib/constants";
 import { runPool } from "@/lib/pool";
@@ -57,7 +58,7 @@ export function BulkImportModal({ onClose, onImported }: { onClose: () => void; 
 
   async function analyzeRow(row: ReviewRow, laneIndex: number) {
     updateRow(row.clientId, { status: "analyzing" });
-    setLanes((prev) => setLane(prev, laneIndex, { status: "working", fileName: row.fileName, stage: "Uploading & analyzing…" }));
+    setLanes((prev) => setLane(prev, laneIndex, { status: "working", fileName: row.fileName, stage: "Uploading…" }));
 
     const file = filesRef.current.get(row.clientId);
     if (!file) {
@@ -68,10 +69,28 @@ export function BulkImportModal({ onClose, onImported }: { onClose: () => void; 
 
     const controller = new AbortController();
     inflightRef.current.set(row.clientId, controller);
+    let stagedUrl: string | null = null;
     try {
-      const form = new FormData();
-      form.set("file", file);
-      const res = await authorizedFetch("/api/songs/analyze", { method: "POST", body: form, signal: controller.signal });
+      // Upload straight from the browser to Blob storage — bypasses this
+      // (or any) serverless function's request-body size cap, which real
+      // audio files routinely exceed.
+      const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : "";
+      const blob = await upload(`staging/${crypto.randomUUID()}${ext}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/blob-upload",
+        multipart: true,
+        abortSignal: controller.signal,
+      });
+      stagedUrl = blob.url;
+
+      setLanes((prev) => setLane(prev, laneIndex, { status: "working", fileName: row.fileName, stage: "Analyzing…" }));
+
+      const res = await authorizedFetch("/api/songs/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stagingUrl: blob.url, fileName: file.name }),
+        signal: controller.signal,
+      });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
         throw new Error(body?.error ?? "Failed to analyze file");
@@ -95,6 +114,9 @@ export function BulkImportModal({ onClose, onImported }: { onClose: () => void; 
         const message = err instanceof Error ? err.message : "Failed to analyze file";
         updateRow(row.clientId, { status: "error", errorMessage: message });
         setLanes((prev) => setLane(prev, laneIndex, { status: "error", fileName: row.fileName, message }));
+        // The upload itself may have succeeded even though analysis failed —
+        // don't leave an orphaned blob behind.
+        if (stagedUrl) fetch(`/api/songs/analyze?stagingId=${encodeURIComponent(stagedUrl)}`, { method: "DELETE" }).catch(() => {});
       }
     } finally {
       inflightRef.current.delete(row.clientId);
@@ -194,7 +216,7 @@ export function BulkImportModal({ onClose, onImported }: { onClose: () => void; 
     setRows((prev) => prev.filter((r) => r.clientId !== row.clientId));
     filesRef.current.delete(row.clientId);
     if (row.stagingId) {
-      fetch(`/api/songs/analyze?stagingId=${row.stagingId}`, { method: "DELETE" }).catch(() => {});
+      fetch(`/api/songs/analyze?stagingId=${encodeURIComponent(row.stagingId)}`, { method: "DELETE" }).catch(() => {});
     }
   };
 
@@ -202,7 +224,7 @@ export function BulkImportModal({ onClose, onImported }: { onClose: () => void; 
     if (phase === "analyzing" || phase === "importing") cancelRun();
     for (const row of rows) {
       if (row.stagingId && row.status !== "imported" && row.status !== "skipped") {
-        fetch(`/api/songs/analyze?stagingId=${row.stagingId}`, { method: "DELETE" }).catch(() => {});
+        fetch(`/api/songs/analyze?stagingId=${encodeURIComponent(row.stagingId)}`, { method: "DELETE" }).catch(() => {});
       }
     }
     onClose();
@@ -234,8 +256,8 @@ export function BulkImportModal({ onClose, onImported }: { onClose: () => void; 
   }, [rows, reviewFilter]);
 
   return (
-    <div className="fixed inset-0 z-[9998] flex items-start justify-center overflow-y-auto bg-black/75 p-3 py-8 sm:p-6">
-      <div className="w-full max-w-3xl rounded-3xl border border-line bg-surface p-5 shadow-2xl sm:p-7">
+    <div className="animate-backdrop-in fixed inset-0 z-[9998] flex items-start justify-center overflow-y-auto bg-black/75 p-3 py-8 sm:p-6">
+      <div className="animate-scale-in w-full max-w-3xl rounded-3xl border border-line bg-surface p-5 shadow-lg shadow-black/20 sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="font-display text-xl font-semibold text-ink">Bulk import</h2>
@@ -273,14 +295,14 @@ export function BulkImportModal({ onClose, onImported }: { onClose: () => void; 
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-gold-ink hover:bg-gold-bright"
+                  className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-gold-ink transition active:scale-[0.97] hover:bg-gold-bright"
                 >
                   Choose files
                 </button>
                 <button
                   type="button"
                   onClick={() => folderInputRef.current?.click()}
-                  className="rounded-lg border border-teal/50 bg-teal/10 px-4 py-2 text-sm font-semibold text-teal hover:bg-teal/20"
+                  className="rounded-lg border border-teal/50 bg-teal/10 px-4 py-2 text-sm font-semibold text-teal transition active:scale-[0.97] hover:bg-teal/20"
                 >
                   Choose folder
                 </button>
@@ -324,14 +346,14 @@ export function BulkImportModal({ onClose, onImported }: { onClose: () => void; 
                       setRows([]);
                       filesRef.current.clear();
                     }}
-                    className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink-dim hover:bg-surface-3"
+                    className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink-dim transition active:scale-[0.97] hover:bg-surface-3"
                   >
                     Clear
                   </button>
                   <button
                     type="button"
                     onClick={startAnalysis}
-                    className="rounded-lg bg-gold px-4 py-1.5 text-xs font-semibold text-gold-ink hover:bg-gold-bright"
+                    className="rounded-lg bg-gold px-4 py-1.5 text-xs font-semibold text-gold-ink transition active:scale-[0.97] hover:bg-gold-bright"
                   >
                     Analyze {rows.length} file{rows.length === 1 ? "" : "s"}
                   </button>
@@ -363,14 +385,14 @@ export function BulkImportModal({ onClose, onImported }: { onClose: () => void; 
               <button
                 type="button"
                 onClick={() => setPausedBoth(!paused)}
-                className="flex-1 rounded-xl border border-line bg-surface-2 px-4 py-2.5 text-sm font-medium text-ink-dim hover:bg-surface-3"
+                className="flex-1 rounded-xl border border-line bg-surface-2 px-4 py-2.5 text-sm font-medium text-ink-dim transition active:scale-[0.97] hover:bg-surface-3"
               >
                 {paused ? "Resume" : "Pause"}
               </button>
               <button
                 type="button"
                 onClick={cancelRun}
-                className="flex-1 rounded-xl border border-bad/40 bg-bad/10 px-4 py-2.5 text-sm font-medium text-bad hover:bg-bad/20"
+                className="flex-1 rounded-xl border border-bad/40 bg-bad/10 px-4 py-2.5 text-sm font-medium text-bad transition active:scale-[0.97] hover:bg-bad/20"
               >
                 Cancel
               </button>
@@ -460,7 +482,7 @@ export function BulkImportModal({ onClose, onImported }: { onClose: () => void; 
               type="button"
               onClick={startImport}
               disabled={readyCount === 0}
-              className="mt-4 w-full rounded-xl bg-gold px-4 py-3 text-sm font-semibold text-gold-ink transition hover:bg-gold-bright disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-4 w-full rounded-xl bg-gold px-4 py-3 text-sm font-semibold text-gold-ink transition active:scale-[0.98] hover:bg-gold-bright disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
             >
               Import {readyCount} song{readyCount === 1 ? "" : "s"}
             </button>
@@ -468,8 +490,8 @@ export function BulkImportModal({ onClose, onImported }: { onClose: () => void; 
         )}
 
         {phase === "done" && (
-          <div className="mt-5">
-            <div className="rounded-2xl border border-good/40 bg-good/10 p-5 text-center">
+          <div className="animate-rise-in mt-5">
+            <div className="animate-pop rounded-2xl border border-good/40 bg-good/10 p-5 text-center">
               <p className="font-display text-lg font-semibold text-good">Import complete</p>
               <p className="mt-2 text-sm text-ink-dim">
                 <span className="font-mono text-ink">{importedCount}</span> imported
@@ -504,7 +526,7 @@ export function BulkImportModal({ onClose, onImported }: { onClose: () => void; 
             <button
               type="button"
               onClick={handleClose}
-              className="mt-5 w-full rounded-xl bg-gold px-4 py-3 text-sm font-semibold text-gold-ink hover:bg-gold-bright"
+              className="mt-5 w-full rounded-xl bg-gold px-4 py-3 text-sm font-semibold text-gold-ink transition active:scale-[0.98] hover:bg-gold-bright"
             >
               Done
             </button>
@@ -516,12 +538,13 @@ export function BulkImportModal({ onClose, onImported }: { onClose: () => void; 
 }
 
 function LaneCard({ lane }: { lane: LaneState }) {
+  const base = "animate-rise-in rounded-lg border px-3 py-2.5 text-xs transition-colors";
   if (lane.status === "idle") {
-    return <div className="rounded-lg border border-line/60 bg-surface-2/50 px-3 py-2.5 text-xs text-ink-mute">Idle</div>;
+    return <div className={`${base} border-line/60 bg-surface-2/50 text-ink-mute`}>Idle</div>;
   }
   if (lane.status === "working") {
     return (
-      <div className="rounded-lg border border-gold/30 bg-gold/5 px-3 py-2.5 text-xs">
+      <div className={`${base} border-gold/30 bg-gold/5`}>
         <p className="truncate font-medium text-ink">{lane.fileName}</p>
         <p className="mt-0.5 truncate text-ink-mute">{lane.stage}</p>
       </div>
@@ -529,14 +552,14 @@ function LaneCard({ lane }: { lane: LaneState }) {
   }
   if (lane.status === "error") {
     return (
-      <div className="rounded-lg border border-bad/30 bg-bad/5 px-3 py-2.5 text-xs">
+      <div className={`${base} border-bad/30 bg-bad/5`}>
         <p className="truncate font-medium text-ink">{lane.fileName}</p>
         <p className="mt-0.5 truncate text-bad">{lane.message}</p>
       </div>
     );
   }
   return (
-    <div className="rounded-lg border border-good/30 bg-good/5 px-3 py-2.5 text-xs">
+    <div className={`${base} border-good/30 bg-good/5`}>
       <p className="truncate font-medium text-ink">{lane.fileName}</p>
       <p className="mt-0.5 text-good">Done</p>
     </div>
@@ -552,23 +575,30 @@ function ReviewTableRow({
   onChange: (clientId: string, patch: Partial<ReviewRow>) => void;
   onRemove: () => void;
 }) {
+  // Errored rows should stay editable — you might need to fix a title/start
+  // time before retrying, not just re-run the exact same thing.
+  const editable = row.status === "ready" || row.status === "error";
+
   return (
     <tr className="border-t border-line align-top">
       <td className="px-3 py-2">
         <input
           value={row.title}
           onChange={(e) => onChange(row.clientId, { title: e.target.value })}
-          disabled={row.status !== "ready"}
-          className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink outline-none focus:border-gold disabled:opacity-50"
+          disabled={!editable}
+          className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink outline-none transition focus:border-gold disabled:opacity-50"
         />
         <p className="mt-0.5 truncate text-[10px] text-ink-mute">{row.fileName}</p>
+        {row.status === "error" && row.errorMessage && (
+          <p className="mt-0.5 text-[10px] text-bad">{row.errorMessage}</p>
+        )}
       </td>
       <td className="px-3 py-2">
         <input
           value={row.artist}
           onChange={(e) => onChange(row.clientId, { artist: e.target.value })}
-          disabled={row.status !== "ready"}
-          className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink outline-none focus:border-gold disabled:opacity-50"
+          disabled={!editable}
+          className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink outline-none transition focus:border-gold disabled:opacity-50"
         />
       </td>
       <td className="px-3 py-2">
@@ -578,8 +608,8 @@ function ReviewTableRow({
           step={0.1}
           value={row.startOverride ?? ""}
           onChange={(e) => onChange(row.clientId, { startOverride: Number(e.target.value) })}
-          disabled={row.status !== "ready"}
-          className="w-20 rounded-md border border-line bg-surface px-2 py-1.5 font-mono text-sm text-ink outline-none focus:border-gold disabled:opacity-50"
+          disabled={!editable}
+          className="w-20 rounded-md border border-line bg-surface px-2 py-1.5 font-mono text-sm text-ink outline-none transition focus:border-gold disabled:opacity-50"
         />
       </td>
       <td className="px-3 py-2 text-xs">

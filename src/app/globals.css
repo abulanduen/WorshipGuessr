@@ -10,8 +10,8 @@
   --ink: #f4ecdc;
   --ink-dim: #cdbfa8;
   --ink-mute: #9a8b74;
-  --gold: #e3b23c;
-  --gold-bright: #f6ce6f;
+  --gold: #c9a35c;
+  --gold-bright: #ddbd7f;
   --gold-ink: #2a1c06;
   --teal: #5aa79b;
   --good: #83b06a;
@@ -101,9 +101,95 @@ body {
 }
 
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 45%, transparent); }
-  100% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--gold) 0%, transparent); }
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 25%, transparent); }
+  100% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--gold) 0%, transparent); }
 }
 .animate-pulse-ring {
-  animation: pulse-ring 1.4s ease-out infinite;
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in {
+  animation: scale-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-backdrop-in {
+  animation: backdrop-in 0.18s ease-out both;
+}
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+.animate-pop {
+  animation: pop 0.35s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+}
+
+@keyframes tick-fill {
+  from { transform: scaleY(0.5); opacity: 0.6; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+.animate-tick-fill {
+  animation: tick-fill 0.3s ease-out both;
+}
+
+@keyframes shimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+.animate-shimmer {
+  background-image: linear-gradient(
+    100deg,
+    var(--surface-2) 40%,
+    var(--surface-3) 50%,
+    var(--surface-2) 60%
+  );
+  background-size: 250% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes confetti-fall {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0.85; }
+  100% { transform: translate(var(--drift), 100px) rotate(var(--spin)); opacity: 0; }
+}
+.animate-confetti {
+  animation: confetti-fall var(--fall-duration, 0.9s) cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Smooth expand/collapse via the grid-rows trick — no JS height measuring needed. */
+.collapsible-rows {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.collapsible-rows.is-open {
+  grid-template-rows: 1fr;
+}
+.collapsible-rows > div {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shake,
+  .animate-rise-in,
+  .animate-pulse-ring,
+  .animate-scale-in,
+  .animate-backdrop-in,
+  .animate-pop,
+  .animate-tick-fill,
+  .animate-shimmer,
+  .animate-confetti {
+    animation: none !important;
+  }
+  .collapsible-rows {
+    transition: none !important;
+  }
 }

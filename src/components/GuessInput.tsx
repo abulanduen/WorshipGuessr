@@ -121,15 +121,22 @@ export function GuessInput({ songs, disabled, shakeToken, onGuess }: Props) {
               width: rect.width,
               zIndex: 9999,
             }}
-            className="max-h-72 overflow-y-auto rounded-xl border border-line bg-surface-2 shadow-2xl shadow-black/50"
+            className="animate-scale-in max-h-72 origin-top overflow-y-auto rounded-xl border border-line bg-surface-2 shadow-lg shadow-black/25"
           >
             {matches.map((song) => (
               <li key={song.id}>
                 <button
                   type="button"
-                  onMouseDown={(e) => e.preventDefault()}
+                  onMouseDown={(e) => {
+                    // Portaled content isn't a DOM descendant of the input
+                    // wrapper, so the document-level "click outside" closer
+                    // below would otherwise fire on this mousedown and close
+                    // the dropdown before the click event ever reaches us.
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
                   onClick={() => handlePick(song)}
-                  className="flex w-full flex-col items-start gap-0.5 border-b border-line/60 px-4 py-2.5 text-left last:border-b-0 hover:bg-surface-3"
+                  className="flex w-full flex-col items-start gap-0.5 border-b border-line/60 px-4 py-2.5 text-left transition-colors last:border-b-0 hover:bg-surface-3 active:bg-surface-3"
                 >
                   <span className="text-sm font-medium text-ink">{song.title}</span>
                   {song.artist && <span className="text-xs text-ink-mute">{song.artist}</span>}
