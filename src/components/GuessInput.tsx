@@ -9,7 +9,7 @@ type Props = {
   songs: Song[];
   disabled?: boolean;
   shakeToken: number;
-  onGuess: (songId: string | null) => void;
+  onGuess: (songId: string | null, guessText: string) => void;
 };
 
 type Rect = { top: number; left: number; width: number };
@@ -66,8 +66,8 @@ export function GuessInput({ songs, disabled, shakeToken, onGuess }: Props) {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  const commit = (songId: string | null) => {
-    onGuess(songId);
+  const commit = (songId: string | null, guessText: string) => {
+    onGuess(songId, guessText);
     setQuery("");
     setOpen(false);
   };
@@ -76,10 +76,10 @@ export function GuessInput({ songs, disabled, shakeToken, onGuess }: Props) {
     e.preventDefault();
     if (!query.trim()) return;
     const exact = exactTitleMatch(query, songs);
-    commit(exact ? exact.id : null);
+    commit(exact ? exact.id : null, exact ? exact.title : query.trim());
   };
 
-  const handlePick = (song: Song) => commit(song.id);
+  const handlePick = (song: Song) => commit(song.id, song.title);
 
   return (
     <div ref={wrapperRef} className="relative">

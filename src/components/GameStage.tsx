@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import type { Song } from "@/types";
-import { DECK_SIZE, MIN_SONGS_TO_START, STAGE_DURATIONS } from "@/lib/constants";
-import { useGame } from "@/hooks/useGame";
+import { DECK_SIZE, MIN_SONGS_TO_START } from "@/lib/constants";
+import { useGame, type GuessAttempt } from "@/hooks/useGame";
 import { useAudioClip } from "@/hooks/useAudioClip";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 import { AudioVisualizer } from "./AudioVisualizer";
@@ -27,13 +27,15 @@ export function GameStage({ songs, onScoreSaved }: Props) {
     currentSong,
     stageIndex,
     stageDuration,
-    canAdvanceStage,
+    tierCount,
+    guesses,
+    canSkip,
     results,
     shakeToken,
     isLastSong,
     totalScore,
     startGame,
-    advanceStage,
+    skip,
     submitGuess,
     giveUp,
     nextSong,
@@ -66,11 +68,6 @@ export function GameStage({ songs, onScoreSaved }: Props) {
     if (phase === "feedback" && lastResult?.correct) playRemaining();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, lastResult]);
-
-  const stageLabel = useMemo(() => {
-    if (stageDuration < 1) return `${Math.round(stageDuration * 1000)}ms`;
-    return `${stageDuration}s`;
-  }, [stageDuration]);
 
   return (
     <section className="rounded-3xl border border-line bg-surface p-6 sm:p-9">
@@ -105,7 +102,9 @@ export function GameStage({ songs, onScoreSaved }: Props) {
             <span className="text-gold">{animatedScore} pts</span>
           </div>
 
-          <StageTicks stageIndex={stageIndex} locked={phase === "feedback"} />
+          <StageTicks stageIndex={stageIndex} tierCount={tierCount} locked={phase === "feedback"} />
+
+          <GuessHistory guesses={guesses} />
 
           <div className="relative mx-auto my-7 flex h-40 w-full max-w-xs items-center justify-center sm:h-48">
             <AudioVisualizer analyserRef={analyserRef} isPlaying={isPlaying} className="absolute inset-0 h-full w-full" />
@@ -121,8 +120,8 @@ export function GameStage({ songs, onScoreSaved }: Props) {
             </button>
           </div>
 
-          <div key={stageIndex} className="animate-pop text-center font-mono text-3xl font-medium text-gold-bright">
-            {stageLabel}
+          <div key={stageIndex} className="animate-pop text-center font-mono text-lg tracking-wide text-gold-bright">
+            TIER {stageIndex + 1} <span className="text-ink-mute">/ {tierCount}</span>
           </div>
 
           {phase === "stage" && (
@@ -134,12 +133,12 @@ export function GameStage({ songs, onScoreSaved }: Props) {
                   type="button"
                   onClick={() => {
                     unlockAudio();
-                    advanceStage();
+                    skip();
                   }}
-                  disabled={!canAdvanceStage}
+                  disabled={!canSkip}
                   className="flex-1 rounded-xl border border-teal/50 bg-teal/10 px-4 py-3 text-sm font-semibold text-teal transition active:scale-[0.97] hover:bg-teal/20 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
                 >
-                  Play it longer
+                  Skip
                 </button>
                 <button
                   type="button"
@@ -185,8 +184,9 @@ function SetupView({
     <div className="flex flex-col items-center gap-4 py-8 text-center">
       <h2 className="font-display text-2xl font-semibold text-ink">Ready to play?</h2>
       <p className="max-w-sm text-sm text-ink-dim">
-        Each round draws {DECK_SIZE} songs at random from the setlist. Clips start at a fraction of a second and
-        grow longer until someone names the song.
+        Each round draws {DECK_SIZE} songs at random from the setlist. Every song starts at a barely-there sliver of
+        audio, growing tier by tier — a wrong guess pushes you straight to the next tier, or skip ahead yourself for
+        a longer listen.
       </p>
       <p className="font-mono text-xs text-ink-mute">
         {songCount} song{songCount === 1 ? "" : "s"} in the setlist
@@ -204,11 +204,11 @@ function SetupView({
   );
 }
 
-function StageTicks({ stageIndex, locked }: { stageIndex: number; locked: boolean }) {
+function StageTicks({ stageIndex, tierCount, locked }: { stageIndex: number; tierCount: number; locked: boolean }) {
   return (
     <div className="mt-5 flex items-end gap-1.5">
-      {STAGE_DURATIONS.map((d, i) => (
-        <div key={d} className="relative flex-1">
+      {Array.from({ length: tierCount }, (_, i) => (
+        <div key={i} className="relative flex-1">
           {i === stageIndex && (
             <div
               className={`absolute -top-2.5 left-1/2 h-0 w-0 -translate-x-1/2 border-x-4 border-t-4 border-x-transparent ${
@@ -222,6 +222,28 @@ function StageTicks({ stageIndex, locked }: { stageIndex: number; locked: boolea
             } ${i === stageIndex ? "animate-tick-fill" : ""}`}
           />
         </div>
+      ))}
+    </div>
+  );
+}
+
+function GuessHistory({ guesses }: { guesses: (GuessAttempt | null)[] }) {
+  const attempted = guesses
+    .map((g, i) => ({ g, tier: i + 1 }))
+    .filter((row): row is { g: GuessAttempt; tier: number } => row.g !== null);
+
+  if (attempted.length === 0) return null;
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-1.5">
+      {attempted.map(({ g, tier }) => (
+        <span
+          key={tier}
+          className="animate-rise-in inline-flex items-center gap-1.5 rounded-full border border-bad/30 bg-bad/5 px-3 py-1 text-xs text-ink-dim"
+        >
+          <span className="font-mono text-ink-mute">T{tier}</span>
+          <span className="max-w-[10rem] truncate">{g.text}</span>
+        </span>
       ))}
     </div>
   );

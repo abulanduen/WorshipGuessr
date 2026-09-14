@@ -1,5 +1,10 @@
-// Clip stage lengths (seconds) and points awarded for guessing correctly at that stage.
-export const STAGE_DURATIONS = [0.1, 0.2, 0.5, 1, 2, 4, 8, 15] as const;
+// Clip tier lengths (seconds) and points awarded for guessing correctly at
+// that tier. Tiers are shown to players as "Tier N", not literal times —
+// that also gives us room to keep the shortest tier long enough to
+// reliably produce audible sound on mobile (short devices/browsers have a
+// real startup delay before audio output begins; anything much under 0.5s
+// risked being silent even with playback padding).
+export const STAGE_DURATIONS = [0.5, 1, 2, 3, 5, 7, 10, 15] as const;
 export const STAGE_POINTS = [500, 350, 250, 175, 125, 90, 60, 30] as const;
 
 export const DECK_SIZE = 8;
