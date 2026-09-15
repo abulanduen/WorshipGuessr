@@ -163,19 +163,6 @@ body {
   animation: confetti-fall var(--fall-duration, 0.9s) cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Smooth expand/collapse via the grid-rows trick — no JS height measuring needed. */
-.collapsible-rows {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.collapsible-rows.is-open {
-  grid-template-rows: 1fr;
-}
-.collapsible-rows > div {
-  overflow: hidden;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .animate-shake,
   .animate-rise-in,
@@ -187,8 +174,5 @@ body {
   .animate-shimmer,
   .animate-confetti {
     animation: none !important;
-  }
-  .collapsible-rows {
-    transition: none !important;
   }
 }

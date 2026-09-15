@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Song } from "@/types";
 import { useAuth } from "@/lib/auth-context";
-import { Collapsible } from "./Collapsible";
+import { ModalPanel } from "./ModalPanel";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ManualAddForm } from "./ManualAddForm";
 import { BulkImportModal } from "./BulkImportModal";
@@ -12,9 +12,10 @@ type Props = {
   songs: Song[];
   loading: boolean;
   onChanged: () => void;
+  onClose: () => void;
 };
 
-export function SetlistPanel({ songs, loading, onChanged }: Props) {
+export function SetlistPanel({ songs, loading, onChanged, onClose }: Props) {
   const { authorizedFetch, unlock } = useAuth();
   const [filter, setFilter] = useState("");
   const [showAdd, setShowAdd] = useState(false);
@@ -94,10 +95,10 @@ export function SetlistPanel({ songs, loading, onChanged }: Props) {
   };
 
   return (
-    <Collapsible
+    <ModalPanel
       title="Setlist"
       subtitle={loading ? "Loading…" : `${songs.length} song${songs.length === 1 ? "" : "s"}`}
-      defaultOpen={songs.length === 0}
+      onClose={onClose}
     >
       {locked ? (
         <div className="animate-rise-in flex flex-col items-center gap-3 rounded-xl border border-dashed border-line px-4 py-10 text-center">
@@ -219,7 +220,7 @@ export function SetlistPanel({ songs, loading, onChanged }: Props) {
           }}
         />
       )}
-    </Collapsible>
+    </ModalPanel>
   );
 }
 

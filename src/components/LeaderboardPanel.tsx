@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import type { ScoreEntry } from "@/types";
-import { Collapsible } from "./Collapsible";
+import { ModalPanel } from "./ModalPanel";
 
-export function LeaderboardPanel({ refreshKey }: { refreshKey: number }) {
+export function LeaderboardPanel({ refreshKey, onClose }: { refreshKey: number; onClose: () => void }) {
   const [scores, setScores] = useState<ScoreEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +24,7 @@ export function LeaderboardPanel({ refreshKey }: { refreshKey: number }) {
   }, [refreshKey]);
 
   return (
-    <Collapsible title="Leaderboard" subtitle="Top 10 scores">
+    <ModalPanel title="Leaderboard" subtitle="Top 10 scores" onClose={onClose}>
       {error && <p className="text-sm text-bad">{error}</p>}
       {!error && scores === null && (
         <ol className="space-y-1.5">
@@ -56,6 +56,6 @@ export function LeaderboardPanel({ refreshKey }: { refreshKey: number }) {
           ))}
         </ol>
       )}
-    </Collapsible>
+    </ModalPanel>
   );
 }
