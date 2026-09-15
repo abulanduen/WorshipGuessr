@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { upload } from "@vercel/blob/client";
 import type { AnalyzeResult, ImportRowResult, LaneState, ReviewRow } from "@/types";
 import { BULK_IMPORT_CONCURRENCY } from "@/lib/constants";
 import { runPool } from "@/lib/pool";
 import { getAudioFilesFromDataTransfer, filterAudioFiles } from "@/lib/read-dropped-files";
+import { uploadStagingFile } from "@/lib/upload-client";
 import { useAuth } from "@/lib/auth-context";
 
 type Phase = "select" | "analyzing" | "review" | "importing" | "done";
@@ -71,24 +71,14 @@ export function BulkImportModal({ onClose, onImported }: { onClose: () => void; 
     inflightRef.current.set(row.clientId, controller);
     let stagedUrl: string | null = null;
     try {
-      // Upload straight from the browser to Blob storage — bypasses this
-      // (or any) serverless function's request-body size cap, which real
-      // audio files routinely exceed.
-      const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : "";
-      const blob = await upload(`staging/${crypto.randomUUID()}${ext}`, file, {
-        access: "public",
-        handleUploadUrl: "/api/blob-upload",
-        multipart: true,
-        abortSignal: controller.signal,
-      });
-      stagedUrl = blob.url;
+      stagedUrl = await uploadStagingFile(file, controller.signal);
 
       setLanes((prev) => setLane(prev, laneIndex, { status: "working", fileName: row.fileName, stage: "Analyzing…" }));
 
       const res = await authorizedFetch("/api/songs/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stagingUrl: blob.url, fileName: file.name }),
+        body: JSON.stringify({ stagingUrl: stagedUrl, fileName: file.name }),
         signal: controller.signal,
       });
       if (!res.ok) {

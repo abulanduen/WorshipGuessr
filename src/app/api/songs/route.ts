@@ -16,15 +16,15 @@ export async function GET() {
   return NextResponse.json(songs.map((s) => ({ ...s, addedAt: s.addedAt.toISOString() })));
 }
 
-// Manual single-song add. The client uploads the audio file straight to Blob
-// (see /api/blob-upload) and sends us just the resulting URL — never the
-// file bytes — since Vercel serverless functions cap request bodies at
+// Manual single-song add. The client uploads the audio file straight to
+// storage (see /api/upload-url) and sends us just the resulting URL — never
+// the file bytes — since Vercel serverless functions cap request bodies at
 // 4.5MB, well under the size of a typical song.
 export async function POST(req: NextRequest) {
   if (!isAuthorized(req)) return NextResponse.json({ error: "Passcode required" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
-  const blobUrl = body?.blobUrl;
+  const stagingUrl = body?.stagingUrl;
   const title = typeof body?.title === "string" ? body.title.trim() : "";
   const artist = typeof body?.artist === "string" ? body.artist.trim() || null : null;
   const explicitStartTime =
@@ -34,26 +34,26 @@ export async function POST(req: NextRequest) {
         ? Number(body.startTime)
         : null;
 
-  if (typeof blobUrl !== "string" || !isStagingBlobUrl(blobUrl)) {
+  if (typeof stagingUrl !== "string" || !isStagingBlobUrl(stagingUrl)) {
     return NextResponse.json({ error: "Missing audio file" }, { status: 400 });
   }
   if (!title) return NextResponse.json({ error: "Title is required" }, { status: 400 });
 
-  const ext = path.extname(new URL(blobUrl).pathname).toLowerCase();
+  const ext = path.extname(new URL(stagingUrl).pathname).toLowerCase();
   if (!SUPPORTED_AUDIO_EXTENSIONS.includes(ext)) {
     return NextResponse.json({ error: `Unsupported audio format: ${ext || "unknown"}` }, { status: 400 });
   }
 
   let localPath: string | null = null;
   try {
-    localPath = await downloadBlobToTmp(blobUrl, ext);
+    localPath = await downloadBlobToTmp(stagingUrl, ext);
     const sourceDuration = await probeDuration(localPath);
     const startTime =
       explicitStartTime !== null && !Number.isNaN(explicitStartTime)
         ? Math.max(0, explicitStartTime)
         : await suggestStartTime(localPath, sourceDuration);
     const song = await commitSong({ inputPath: localPath, title, artist, startTime, sourceDuration });
-    await deleteBlob(blobUrl);
+    await deleteBlob(stagingUrl);
     return NextResponse.json(song, { status: 201 });
   } catch (err) {
     if (err instanceof DuplicateSongError) {

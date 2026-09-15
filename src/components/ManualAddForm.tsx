@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { upload } from "@vercel/blob/client";
+import { uploadStagingFile } from "@/lib/upload-client";
 import { useAuth } from "@/lib/auth-context";
 
 export function ManualAddForm({ onAdded }: { onAdded: () => void }) {
@@ -21,23 +21,15 @@ export function ManualAddForm({ onAdded }: { onAdded: () => void }) {
     setSubmitting(true);
     setError(null);
     try {
-      // Upload straight from the browser to Blob storage — bypasses the
-      // serverless function's request-body size cap, which real audio files
-      // routinely exceed.
       setProgressLabel("Uploading…");
-      const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : "";
-      const blob = await upload(`staging/${crypto.randomUUID()}${ext}`, file, {
-        access: "public",
-        handleUploadUrl: "/api/blob-upload",
-        multipart: true,
-      });
+      const stagingUrl = await uploadStagingFile(file);
 
       setProgressLabel("Trimming & encoding…");
       const res = await authorizedFetch("/api/songs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          blobUrl: blob.url,
+          stagingUrl,
           title: title.trim(),
           artist: artist.trim(),
           startTime: startTime.trim() || null,
