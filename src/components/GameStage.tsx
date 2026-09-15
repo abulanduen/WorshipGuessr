@@ -126,7 +126,15 @@ export function GameStage({ songs, onScoreSaved }: Props) {
 
           {phase === "stage" && (
             <div className="mt-6 space-y-4">
-              <GuessInput key={currentSong.id} songs={songs} shakeToken={shakeToken} onGuess={submitGuess} />
+              <GuessInput
+                key={currentSong.id}
+                songs={songs}
+                shakeToken={shakeToken}
+                onGuess={(songId, guessText) => {
+                  unlockAudio();
+                  submitGuess(songId, guessText);
+                }}
+              />
 
               <div className="flex flex-col gap-2.5 sm:flex-row">
                 <button
